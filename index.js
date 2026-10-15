@@ -1,5 +1,5 @@
 const MODULE = 'sillytavern_music_widget';
-const VERSION = '0.6.0';
+const VERSION = '0.6.1';
 
 const DEFAULT_SKIN = {
   id: 'default',
@@ -357,15 +357,17 @@ function refresh() {
 
   applySkin();
 
-  const hasRoleSongs = !!charKey() && songsForCharacter(charKey()).length > 0;
-  const hasGlobalSongs = globalSongs().length > 0;
-  const visible = S.enabled && S.floatingEnabled &&
-    (!S.showOnlyBound || hasRoleSongs) &&
-    (hasRoleSongs || hasGlobalSongs || !S.showOnlyBound);
-
-  root.style.display = visible ? '' : 'none';
-  root.querySelector('#stw-launcher').style.display =
-    S.enabled && S.floatingEnabled ? '' : 'none';
+  // 悬浮入口只受两个总开关控制，不再被“当前角色是否绑定歌曲”连带隐藏。
+  // 即使歌曲库为空，也允许打开播放器查看空状态并进入管理设置。
+  const enabled = S.enabled && S.floatingEnabled;
+  root.style.display = enabled ? '' : 'none';
+  const launcher = root.querySelector('#stw-launcher');
+  launcher.style.display = enabled ? 'grid' : 'none';
+  launcher.style.position = 'fixed';
+  launcher.style.right = '0';
+  launcher.style.bottom = '0';
+  launcher.style.zIndex = '1000000';
+  // “仅在有绑定歌曲时显示”不应让入口/播放器整体消失；保留设置值以兼容旧配置。
 
   if (audio) {
     root.querySelector('[data-act="volume"]').value = S.volume;
@@ -378,6 +380,11 @@ function build() {
 
   root = document.createElement('div');
   root.id = 'stw-root';
+  // CSS 加载失败时仍保证入口固定在手机视口内且可点击。
+  Object.assign(root.style, {
+    position: 'fixed', right: '10px', bottom: '10px',
+    zIndex: '999999', pointerEvents: 'none'
+  });
   root.innerHTML = [
     '<div id="stw-player">',
       '<div class="stw-player-inner">',
@@ -399,7 +406,7 @@ function build() {
         '<div class="stw-player-footer"><span data-role="scope">全局歌曲</span><button type="button" class="stw-manage" data-act="manage">管理</button></div>',
       '</div>',
     '</div>',
-    '<button type="button" id="stw-launcher" aria-label="打开音乐播放器">♫</button>',
+    '<button type="button" id="stw-launcher" aria-label="打开音乐播放器" style="pointer-events:auto;position:fixed;right:10px;bottom:10px;z-index:1000000;width:52px;height:52px;border:1px solid rgba(216,200,168,.65);border-radius:50%;background:rgba(12,22,38,.96);box-shadow:0 8px 28px rgba(0,0,0,.45);color:#d8c8a8;font-size:22px;display:grid;place-items:center;cursor:pointer;">♫</button>',
   ].join('');
 
   document.body.appendChild(root);
@@ -411,7 +418,12 @@ function build() {
   audio.addEventListener('loadedmetadata', progress);
   audio.addEventListener('ended', next);
 
-  root.querySelector('#stw-launcher').addEventListener('click', () => player.classList.toggle('open'));
+  root.querySelector('#stw-launcher').addEventListener('click', () => {
+    const opening = !player.classList.contains('open');
+    player.classList.toggle('open', opening);
+    // 直接同步 display，避免移动端样式未加载时无法展开/收起。
+    player.style.display = opening ? 'block' : 'none';
+  });
   root.addEventListener('click', (event) => {
     const action = event.target.closest('[data-act]')?.dataset.act;
     if (action === 'play') toggle();
