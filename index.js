@@ -1,5 +1,5 @@
 const MODULE = 'sillytavern_music_widget';
-const VERSION = '0.6.1';
+const VERSION = '0.6.4';
 
 const DEFAULT_SKIN = {
   id: 'default',
