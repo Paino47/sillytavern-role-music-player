@@ -383,7 +383,7 @@ function build() {
   // CSS 加载失败时仍保证入口固定在手机视口内且可点击。
   Object.assign(root.style, {
     position: 'fixed', right: '10px', bottom: '10px',
-    zIndex: '999999', pointerEvents: 'none'
+    zIndex: '999999', pointerEvents: 'auto'
   });
   root.innerHTML = [
     '<div id="stw-player">',
